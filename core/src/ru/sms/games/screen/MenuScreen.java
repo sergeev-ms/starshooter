@@ -1,98 +1,105 @@
 package ru.sms.games.screen;
 
-import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
 import ru.sms.games.base.BaseScreen;
-
-import static com.badlogic.gdx.Input.Keys;
+import ru.sms.games.math.Rect;
+import ru.sms.games.sprite.Background;
+import ru.sms.games.sprite.ExitButton;
+import ru.sms.games.sprite.PlayButton;
+import ru.sms.games.sprite.Star;
 
 public class MenuScreen extends BaseScreen {
-    private SpriteBatch batch;
-    private Texture img;
-    private Vector2 pos = new Vector2(0, 0);
-    private Vector2 v;
-    private Vector2 directionNor;
-    private Vector2 direction;
-    private boolean isClicked;
-    private boolean isStopped;
-    private int deltaToMove = 10;
+    private static final int STAR_COUNT = 128;
 
-    public MenuScreen(Game game) {
-        super(game);
-    }
+    private Texture bg;
+    private TextureAtlas textureAtlas;
+
+    private Background background;
+    private Star[] star;
+    private PlayButton playButton;
+    private ExitButton exitButton;
+
 
     @Override
     public void show() {
         super.show();
-        batch = new SpriteBatch();
-        img = new Texture("geekbrains.png");
-        pos = new Vector2(0f, 0f);
-        v = new Vector2(5f, 5f);
-        direction = new Vector2();
-        isStopped = false;
+        textureAtlas = new TextureAtlas("textures/menuAtlas.tpack");
+        bg = new Texture("textures/bg.png");
+        background = new Background(new TextureRegion(bg));
+        star = new Star[STAR_COUNT];
+        playButton = new PlayButton(textureAtlas);
+        exitButton = new ExitButton(textureAtlas);
+        for (int i = 0; i < star.length; i++) {
+            star[i] = new Star(textureAtlas);
+        }
     }
 
     @Override
     public void render(float delta) {
         super.render(delta);
-        Gdx.gl.glClearColor(1, 0.4f, 0.6f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        batch.begin();
-        batch.draw(img, pos.x, pos.y, 200, 100);
-        batch.end();
-        if (isClicked && !isStopped) {
-            pos.add(v);
-        }
-        if (pos.len() > direction.len())
-            isStopped = true;
+        update(delta);
+        draw();
+    }
 
+    public void update(float delta) {
+        for (int i = 0; i < star.length; i++) {
+            star[i].update(delta);
+        }
+    }
+
+    public void draw() {
+        Gdx.gl.glClearColor(1, 0.3f, 0.6f, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        batch.begin();
+        background.draw(batch);
+        for (int i = 0; i < star.length; i++) {
+            star[i].draw(batch);
+        }
+        playButton.draw(batch);
+        exitButton.draw(batch);
+        batch.end();
+    }
+
+    @Override
+    public void resize(Rect worldBounds) {
+        super.resize(worldBounds);
+        background.resize(worldBounds);
+        for (int i = 0; i < star.length; i++) {
+            star[i].resize(worldBounds);
+        }
+        playButton.resize(worldBounds);
+        exitButton.resize(worldBounds);
     }
 
     @Override
     public void dispose() {
-        batch.dispose();
-        img.dispose();
+        textureAtlas.dispose();
+        bg.dispose();
         super.dispose();
     }
 
     @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        System.out.println("touchDown screenX = " + screenX + " screenY = " + (Gdx.graphics.getHeight() - screenY));
-        return super.touchDown(screenX, screenY, pointer, button);
+    public boolean touchDown(Vector2 touch, int pointer) {
+        if (exitButton.isMe(touch))
+            exitButton.setPushed(true);
+        if (playButton.isMe(touch))
+            playButton.setPushed(true);
+        return super.touchDown(touch, pointer);
     }
 
     @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        this.show();
-        isClicked = true;
-        direction.x = screenX;
-        direction.y = Gdx.graphics.getHeight() - screenY;
-        directionNor = direction.cpy().nor();
-        v.scl(directionNor);
-        return super.touchUp(screenX, screenY, pointer, button);
-    }
-
-    @Override
-    public boolean keyUp(int keycode) {
-        switch (keycode) {
-            case Keys.LEFT:
-                pos.x -= deltaToMove;
-                break;
-            case Keys.RIGHT:
-                pos.x += deltaToMove;
-                break;
-            case Keys.UP:
-                pos.y += deltaToMove;
-                break;
-            case Keys.DOWN:
-                pos.y -= deltaToMove;
-                break;
-        }
-        return super.keyUp(keycode);
+    public boolean touchUp(Vector2 touch, int pointer) {
+        if (exitButton.isMe(touch))
+            exitButton.setPushed(false);
+        if (playButton.isMe(touch))
+            playButton.setPushed(false);
+        return super.touchUp(touch, pointer);
     }
 }
